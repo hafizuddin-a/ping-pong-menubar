@@ -18,6 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var panel: GamePanel!
     private let gameView = GameView(frame: NSRect(origin: .zero, size: GameView.size))
     private var lastHide = Date.distantPast
+    private var clickMonitor: Any?
 
     private static let difficultyKey = "difficulty"
 
@@ -28,6 +29,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         gameView.onEscape = { [weak self] in self?.hidePanel() }
 
         buildPanel()
+
+        // Switching to another app closes the game too.
+        NotificationCenter.default.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.hidePanel() }
+        }
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let button = statusItem.button {
@@ -94,6 +100,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.makeKeyAndOrderFront(nil)
         panel.makeFirstResponder(gameView)
         gameView.activate()
+
+        // Menu bar items such as Sound or Wi-Fi belong to other processes, so clicking them never takes key
+        // focus from the panel. Watch for clicks anywhere else on screen and close on those.
+        clickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]) { [weak self] _ in
+            DispatchQueue.main.async { self?.hidePanel() }
+        }
+        // Show the icon as pressed while the game is open. Set after the click finishes, or the button resets it.
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.panel.isVisible else { return }
+            self.statusItem.button?.highlight(true)
+        }
         NSAnimationContext.runAnimationGroup { ctx in
             ctx.duration = 0.14
             panel.animator().alphaValue = 1
@@ -103,6 +120,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func hidePanel() {
         guard panel.isVisible else { return }
         lastHide = Date()
+        if let monitor = clickMonitor { NSEvent.removeMonitor(monitor); clickMonitor = nil }
+        statusItem.button?.highlight(false)
         gameView.deactivate()
         panel.orderOut(nil)
         // Hand keyboard focus back to the app you were in; otherwise (e.g. after Esc) typing goes nowhere.

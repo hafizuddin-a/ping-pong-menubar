@@ -60,7 +60,16 @@ lines, if you'd like to read it first. Run it again any time to reinstall the la
      **Open Anyway** next to Ping, then open the app again.
    - **Earlier macOS:** right-click the app, choose **Open**, then **Open** again.
 
-Prefer to build it yourself? See [Build from source](#build-from-source).
+**Or build it yourself.** You need Xcode's command-line tools (`xcode-select --install`). In Terminal:
+
+```bash
+git clone https://github.com/hafizuddin-a/ping-pong-menubar.git
+cd ping-pong-menubar
+./install.sh
+```
+
+This builds `Ping.app`, puts it in `~/Applications` and opens it. Because the app is built on your own Mac, there is
+no macOS "unidentified developer" warning to click through. See also [Build from source](#build-from-source).
 
 ## How to play
 
