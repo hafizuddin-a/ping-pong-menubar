@@ -90,10 +90,9 @@ MainActor.assumeIsolated {
         let rep = bitmap(sceneW, sceneH)
         draw(into: rep) {
             let W = CGFloat(sceneW), H = CGFloat(sceneH)
-            NSGradient(colors: [NSColor(white: 0.10, alpha: 1), NSColor(white: 0.03, alpha: 1)])!
-                .draw(in: NSRect(x: 0, y: 0, width: W, height: H), angle: -60)
-            NSGradient(colors: [NSColor(white: 0.30, alpha: 0.35), NSColor(white: 0.30, alpha: 0)])!
-                .draw(fromCenter: NSPoint(x: W * 0.15, y: H * 0.1), radius: 0, toCenter: NSPoint(x: W * 0.15, y: H * 0.1), radius: 380, options: [])
+            // A flat desktop: gradients band badly in a 256-colour GIF.
+            NSColor(white: 0.07, alpha: 1).setFill()
+            NSRect(x: 0, y: 0, width: W, height: H).fill()
             // translucent menu bar
             NSColor.black.withAlphaComponent(0.30).setFill()
             NSRect(x: 0, y: H - 48, width: W, height: 48).fill()

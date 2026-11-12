@@ -96,10 +96,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.setFrameOrigin(NSPoint(x: x, y: anchor.minY - panel.frame.height - 6))
 
         panel.alphaValue = 0
-        NSApp.activate()
+        // An accessory app opened from its status item isn't automatically frontmost, and the polite
+        // NSApp.activate() can be declined while another app is active. Without real activation the panel
+        // shows but never becomes the key window, so keys do nothing until you click it. Force it.
+        NSApp.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)
         panel.makeFirstResponder(gameView)
         gameView.activate()
+        // Activation completes a beat later; claim key focus again once it has.
+        DispatchQueue.main.async { [weak self] in self?.claimKeyFocus() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in self?.claimKeyFocus() }
 
         // Menu bar items such as Sound or Wi-Fi belong to other processes, so clicking them never takes key
         // focus from the panel. Watch for clicks anywhere else on screen and close on those.
@@ -115,6 +121,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ctx.duration = 0.14
             panel.animator().alphaValue = 1
         }
+    }
+
+    private func claimKeyFocus() {
+        guard panel.isVisible else { return }
+        if !NSApp.isActive { NSApp.activate(ignoringOtherApps: true) }
+        if !panel.isKeyWindow { panel.makeKey() }
+        if panel.firstResponder !== gameView { panel.makeFirstResponder(gameView) }
     }
 
     private func hidePanel() {
