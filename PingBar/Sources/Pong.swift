@@ -198,6 +198,8 @@ final class PongGame {
         let angle = offset * 0.85
         vx = dir * speed * cos(angle)
         vy = speed * sin(angle) + paddleVel * 0.18      // a moving paddle adds a little spin
+        let total = hypot(vx, vy)                       // spin must not push the ball past the speed cap
+        if total > Self.maxSpeed { vx *= Self.maxSpeed / total; vy *= Self.maxSpeed / total }
     }
 
     private func point(forPlayer: Bool) {

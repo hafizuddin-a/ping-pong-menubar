@@ -91,7 +91,8 @@ final class GameView: NSView {
         case Key.left, Key.right, Key.a, Key.d:
             keys.insert(event.keyCode)
             if game.phase == .paused { game.primaryAction() }     // moving is enough to resume
-            if game.phase == .idle || game.phase == .over, !event.isARepeat { game.primaryAction() }
+            // Not from .over: a paddle key pressed right as the match ends would skip the result screen.
+            if game.phase == .idle, !event.isARepeat { game.primaryAction() }
         default:
             break      // swallow everything else so the system doesn't beep
         }

@@ -105,6 +105,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         lastHide = Date()
         gameView.deactivate()
         panel.orderOut(nil)
+        // Hand keyboard focus back to the app you were in; otherwise (e.g. after Esc) typing goes nowhere.
+        if NSApp.isActive { NSApp.deactivate() }
     }
 
     // MARK: - status item
