@@ -83,6 +83,10 @@ final class PongGame {
     func resetScore() {
         playerScore = 0; botScore = 0
         phase = .idle
+        // Back to the starting positions too, not just the score: a paddle left wherever the old game stopped
+        // would greet the player on the start screen.
+        playerY = Self.height / 2; botY = Self.height / 2
+        playerVel = 0; botTarget = Self.height / 2
         centerBall()
     }
 

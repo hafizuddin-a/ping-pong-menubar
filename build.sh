@@ -5,7 +5,7 @@
 set -e
 cd "$(dirname "$0")"
 APP=Ping.app
-VERSION=${VERSION:-1.0.4}      # override with VERSION=x.y.z ./build.sh; bump this when you cut a release
+VERSION=${VERSION:-1.0.5}      # override with VERSION=x.y.z ./build.sh; bump this when you cut a release
 FRAMEWORKS="-framework AppKit -framework QuartzCore -framework ServiceManagement"
 rm -rf "$APP" .build
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" .build
