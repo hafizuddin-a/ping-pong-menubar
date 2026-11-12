@@ -26,7 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Normal unless the player has chosen otherwise (integer(forKey:) would read "unset" as 0 = Easy).
         let saved = UserDefaults.standard.object(forKey: Self.difficultyKey) as? Int
         gameView.game.difficulty = saved.flatMap(Difficulty.init(rawValue:)) ?? .normal
-        gameView.onEscape = { [weak self] in self?.hidePanel() }
+        gameView.onEscape = { [weak self] in self?.hidePanel(returnFocus: true) }
 
         buildPanel()
 
@@ -130,15 +130,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if panel.firstResponder !== gameView { panel.makeFirstResponder(gameView) }
     }
 
-    private func hidePanel() {
+    /// `returnFocus` is for closes the player asked for (Esc, or the icon): hand the keyboard back to the app they were
+    /// in. For a click elsewhere, the app they clicked is already taking focus, and deactivating could hand it to
+    /// a different one.
+    private func hidePanel(returnFocus: Bool = false) {
         guard panel.isVisible else { return }
         lastHide = Date()
         if let monitor = clickMonitor { NSEvent.removeMonitor(monitor); clickMonitor = nil }
         statusItem.button?.highlight(false)
         gameView.deactivate()
         panel.orderOut(nil)
-        // Hand keyboard focus back to the app you were in; otherwise (e.g. after Esc) typing goes nowhere.
-        if NSApp.isActive { NSApp.deactivate() }
+        // Otherwise (e.g. after Esc) Ping stays frontmost with no window and typing goes nowhere.
+        if returnFocus, NSApp.isActive { NSApp.deactivate() }
     }
 
     // MARK: - status item
@@ -149,7 +152,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if wantsMenu {
             showMenu()
         } else if panel.isVisible {
-            hidePanel()
+            hidePanel(returnFocus: true)
         } else if Date().timeIntervalSince(lastHide) > 0.25 {
             // A click on the icon first takes key focus from the panel, which closes it; without this
             // check the same click would immediately reopen it.
