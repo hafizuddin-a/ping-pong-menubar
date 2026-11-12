@@ -47,7 +47,7 @@ final class PongGame {
     private var vx = 0.0, vy = 0.0, speed = startSpeed
     private var playerVel = 0.0
     private var serveTimer = 0.0
-    private var serveToward = 1.0           // +1 = toward the bot
+    private(set) var serveToward = 1.0           // +1 = toward the bot
     private var botTarget = height / 2
     private var botThink = 0.0
     private var botError = 0.0
@@ -94,7 +94,9 @@ final class PongGame {
         speed = Self.startSpeed
         serveToward = dir
         serveTimer = 0.75
-        botError = Double.random(in: -difficulty.aimError...difficulty.aimError)
+        // A serve to the bot is always returned (at every level); the aiming error only applies to rallies.
+        let e = dir > 0 ? 5.0 : difficulty.aimError
+        botError = Double.random(in: -e...e)
         phase = .serving
     }
 
@@ -103,6 +105,7 @@ final class PongGame {
         vx = serveToward * speed * cos(angle)
         vy = speed * sin(angle)
         phase = .playing
+        botThink = 0                                    // read the serve immediately
     }
 
     // MARK: - step
