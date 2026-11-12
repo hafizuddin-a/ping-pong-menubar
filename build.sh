@@ -9,6 +9,7 @@ VERSION=${VERSION:-1.0.0}
 FRAMEWORKS="-framework AppKit -framework QuartzCore -framework ServiceManagement"
 rm -rf "$APP" .build
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" .build
+cp Resources/AppIcon.icns "$APP/Contents/Resources/"
 swiftc -O -target arm64-apple-macos14.0 $FRAMEWORKS Sources/*.swift -o .build/arm64
 swiftc -O -target x86_64-apple-macos14.0 $FRAMEWORKS Sources/*.swift -o .build/x86_64
 lipo -create .build/arm64 .build/x86_64 -output "$APP/Contents/MacOS/Ping"
@@ -19,6 +20,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleIdentifier</key><string>com.hafiz.ping</string>
   <key>CFBundleName</key><string>Ping</string>
   <key>CFBundleDisplayName</key><string>Ping</string>
+  <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundleExecutable</key><string>Ping</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>$VERSION</string>

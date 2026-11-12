@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="Ping logo" width="200">
+</p>
+
 <h1 align="center">Ping</h1>
 
 <p align="center">
@@ -25,6 +29,14 @@ ping-pong: you are the paddle at the bottom, the bot is at the top. First to 7 w
 - No account and no network access. It only remembers the difficulty you chose.
 
 Requires macOS 14 or later (Apple Silicon and Intel).
+
+<p align="center">
+  <img src="assets/demo-play.gif" width="360" alt="Clicking the menu bar icon opens a glass panel with a vertical game of ping-pong against the bot">
+</p>
+
+<p align="center">
+  <sub><b>Click the icon:</b> the game drops down. The bot above, you below.</sub>
+</p>
 
 ## Install
 
@@ -86,6 +98,9 @@ Right-click (or Control-click) the icon for the menu.
 The whole app is three small files in [Sources](Sources): [Pong.swift](Sources/Pong.swift) is the game itself (physics,
 scoring and the bot, with no AppKit in it), [GameView.swift](Sources/GameView.swift) draws it and reads the keys, and
 [AppDelegate.swift](Sources/AppDelegate.swift) is the menu bar item and the glass panel.
+
+`tools/make_assets.sh` redraws the logo, the app icon and the animation at the top of this page, using the app's real
+renderer and bot.
 
 Because the game is separate from the drawing, it can be simulated without a screen.
 `./tools/simulate.sh` plays hundreds of matches per level with a scripted player and prints how often it wins, which
