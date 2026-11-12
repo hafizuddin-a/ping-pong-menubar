@@ -152,21 +152,29 @@ final class GameView: NSView {
             NSBezierPath(ovalIn: NSRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)).fill()
         }
 
-        // One line of hint text at most.
-        let hint: String?
+        // A few quiet lines of hint text: (text, size, alpha).
+        typealias Line = (String, CGFloat, CGFloat)
+        let lines: [Line]
         switch g.phase {
-        case .idle: hint = "SPACE TO PLAY"
-        case .paused: hint = "SPACE TO RESUME"
-        case .over: hint = g.playerWon ? "YOU WIN  ·  SPACE" : "BOT WINS  ·  SPACE"
-        default: hint = nil
+        case .idle:
+            lines = [("SPACE TO PLAY", 9.5, 0.5), ("FIRST TO \(PongGame.winScore) WINS", 8, 0.35)]
+        case .paused:
+            lines = [("SPACE TO RESUME", 9.5, 0.5)]
+        case .over:
+            lines = [(g.playerWon ? "YOU WIN  ·  SPACE" : "BOT WINS  ·  SPACE", 9.5, 0.5),
+                     ("RIGHT-CLICK THE ICON", 8, 0.35), ("TO CHANGE DIFFICULTY", 8, 0.35)]
+        default:
+            lines = []
         }
-        if let hint {
-            let hintAttrs: [NSAttributedString.Key: Any] = [
-                .font: NSFont.systemFont(ofSize: 9.5, weight: .semibold),
-                .foregroundColor: ink.withAlphaComponent(0.5),
-                .kern: 1.6,
+        var y = h / 2 + 84
+        for (text, size, a) in lines {
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: NSFont.systemFont(ofSize: size, weight: .semibold),
+                .foregroundColor: ink.withAlphaComponent(a),
+                .kern: size > 9 ? 1.6 : 1.2,
             ]
-            drawCentered(hint, at: NSPoint(x: w / 2, y: h / 2 + 90), attrs: hintAttrs)
+            drawCentered(text, at: NSPoint(x: w / 2, y: y), attrs: attrs)
+            y += size > 9 ? 17 : 13
         }
     }
 
