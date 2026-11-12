@@ -60,8 +60,8 @@ MainActor.assumeIsolated {
     makeLogo(to: logoPath, inset: 0)
     makeLogo(to: iconPath, inset: 0.098)
 
-    let sceneW = 520, sceneH = 420
-    let scale: CGFloat = 1.15
+    let sceneW = 520, sceneH = 532      // a crop of the top right of a Mac screen, like a screenshot
+    let scale: CGFloat = 1.45
     let view = GameView(frame: NSRect(origin: .zero, size: GameView.size))
     view.appearance = NSAppearance(named: .darkAqua)
     let window = NSWindow(contentRect: view.frame, styleMask: [.borderless], backing: .buffered, defer: false)
@@ -77,29 +77,69 @@ MainActor.assumeIsolated {
         return img
     }
 
+    /// A system symbol in white, centred on a point.
+    func symbol(_ name: String, size: CGFloat, at c: NSPoint) {
+        let config = NSImage.SymbolConfiguration(pointSize: size, weight: .medium)
+            .applying(NSImage.SymbolConfiguration(paletteColors: [.white]))
+        guard let img = NSImage(systemSymbolName: name, accessibilityDescription: nil)?.withSymbolConfiguration(config) else { return }
+        img.draw(in: NSRect(x: c.x - img.size.width / 2, y: c.y - img.size.height / 2, width: img.size.width, height: img.size.height))
+    }
+
+    // The desktop never changes, so draw it once.
+    let desktop: CGImage = {
+        let rep = bitmap(sceneW, sceneH)
+        draw(into: rep) {
+            let W = CGFloat(sceneW), H = CGFloat(sceneH)
+            NSGradient(colors: [NSColor(white: 0.10, alpha: 1), NSColor(white: 0.03, alpha: 1)])!
+                .draw(in: NSRect(x: 0, y: 0, width: W, height: H), angle: -60)
+            NSGradient(colors: [NSColor(white: 0.30, alpha: 0.35), NSColor(white: 0.30, alpha: 0)])!
+                .draw(fromCenter: NSPoint(x: W * 0.15, y: H * 0.1), radius: 0, toCenter: NSPoint(x: W * 0.15, y: H * 0.1), radius: 380, options: [])
+            // translucent menu bar
+            NSColor.black.withAlphaComponent(0.30).setFill()
+            NSRect(x: 0, y: H - 48, width: W, height: 48).fill()
+        }
+        return rep.cgImage!
+    }()
+
     func scene(panel: NSImage) -> CGImage {
         let rep = bitmap(sceneW, sceneH)
         draw(into: rep) {
             let W = CGFloat(sceneW), H = CGFloat(sceneH)
-            NSColor.black.setFill(); NSRect(x: 0, y: 0, width: W, height: H).fill()
-            // menu bar strip, with the app's icon pressed
-            NSColor.white.withAlphaComponent(0.07).setFill(); NSRect(x: 0, y: H - 26, width: W, height: 26).fill()
-            // the app's menu bar icon (same drawing as AppDelegate), enlarged a little, shown pressed
-            let iconX = W / 2 - 9, iconY = H - 26
-            NSColor.white.withAlphaComponent(0.2).setFill(); pill(NSRect(x: iconX - 8, y: iconY + 2, width: 34, height: 22))
-            let t = NSAffineTransform(); t.translateX(by: iconX - 4.5, yBy: iconY + 1.5); t.scale(by: 1.4); t.concat()
+            NSImage(cgImage: desktop, size: NSSize(width: W, height: H)).draw(in: NSRect(x: 0, y: 0, width: W, height: H))
+            let cy = H - 24
+
+            // The other menu bar items: Wi-Fi, Spotlight, Control Centre, clock.
+            let iconX = W - 339
+            symbol("wifi", size: 21, at: NSPoint(x: W - 271, y: cy))
+            symbol("magnifyingglass", size: 21, at: NSPoint(x: W - 203, y: cy))
+            symbol("switch.2", size: 21, at: NSPoint(x: W - 135, y: cy))
+            let clock = NSAttributedString(string: "9:41", attributes: [
+                .font: NSFont.systemFont(ofSize: 24, weight: .medium), .foregroundColor: NSColor.white])
+            clock.draw(at: NSPoint(x: W - 22 - clock.size().width, y: cy - clock.size().height / 2))
+
+            // Ping's own icon (same drawing as AppDelegate), shown pressed.
+            NSColor.white.withAlphaComponent(0.2).setFill()
+            NSBezierPath(roundedRect: NSRect(x: iconX - 29, y: cy - 17, width: 58, height: 34), xRadius: 9, yRadius: 9).fill()
+            let t = NSAffineTransform(); t.translateX(by: iconX - 17.1, yBy: cy - 15.2); t.scale(by: 1.9); t.concat()
             NSColor.white.setFill()
             pill(NSRect(x: 7, y: 12.6, width: 8, height: 2.4))
             pill(NSRect(x: 3, y: 1, width: 8, height: 2.4))
             NSBezierPath(ovalIn: NSRect(x: 7.2, y: 6.2, width: 3.6, height: 3.6)).fill()
             t.invert(); t.concat()
-            // glass panel under the icon
+
+            // The glass panel under the icon, with a soft shadow.
             let pw = view.bounds.width * scale, ph = view.bounds.height * scale
-            let panelRect = NSRect(x: iconX + 4.5 - pw / 2, y: iconY - 6 - ph, width: pw, height: ph)
+            let panelRect = NSRect(x: iconX - pw / 2, y: H - 48 - 10 - ph, width: pw, height: ph)
             let shape = NSBezierPath(roundedRect: panelRect, xRadius: 26 * scale, yRadius: 26 * scale)
-            NSGradient(starting: NSColor.white.withAlphaComponent(0.16), ending: NSColor.white.withAlphaComponent(0.05))!
+            NSGraphicsContext.saveGraphicsState()
+            let shadow = NSShadow()
+            shadow.shadowColor = NSColor.black.withAlphaComponent(0.55); shadow.shadowBlurRadius = 28; shadow.shadowOffset = NSSize(width: 0, height: -8)
+            shadow.set()
+            NSColor(white: 0.13, alpha: 0.86).setFill(); shape.fill()
+            NSGraphicsContext.restoreGraphicsState()
+            NSGradient(starting: NSColor.white.withAlphaComponent(0.09), ending: NSColor.white.withAlphaComponent(0.02))!
                 .draw(in: shape, angle: -90)
-            NSColor.white.withAlphaComponent(0.22).setStroke(); shape.lineWidth = 1; shape.stroke()
+            NSColor.white.withAlphaComponent(0.20).setStroke(); shape.lineWidth = 1.2; shape.stroke()
             panel.draw(in: panelRect)
         }
         return rep.cgImage!
@@ -116,8 +156,11 @@ MainActor.assumeIsolated {
 
     hold(10)                                  // "SPACE TO PLAY"
     g.primaryAction()
-    let fps = 15.0, total = 270
-    for i in 0..<total {
+    let fps = 15.0, total = 200
+    var i = -1
+    // Play at least `total` frames, and on until both a point or two has been scored (capped), so the score moves.
+    while i + 1 < total || (g.playerScore + g.botScore < 2 && i < 420) {
+        i += 1
         for _ in 0..<2 {
             let aim = (g.botY > 95 ? -15.0 : 15.0) + wobble
             let err = g.ballY - g.playerY - aim

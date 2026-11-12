@@ -31,11 +31,11 @@ ping-pong: you are the paddle at the bottom, the bot is at the top. First to 7 w
 Requires macOS 14 or later (Apple Silicon and Intel).
 
 <p align="center">
-  <img src="assets/demo-play.gif" width="360" alt="Clicking the menu bar icon opens a glass panel with a vertical game of ping-pong against the bot">
+  <img src="assets/demo-play.gif" width="400" alt="The Ping icon in the Mac menu bar, pressed, with a glass panel hanging below it showing a vertical game of ping-pong against the bot">
 </p>
 
 <p align="center">
-  <sub><b>Click the icon:</b> the game drops down. The bot above, you below.</sub>
+  <sub><b>Click the icon</b> in the menu bar and the game drops down. The bot is above, you are below.</sub>
 </p>
 
 ## Install

@@ -24,6 +24,7 @@ final class PongGame {
     static let paddleH = 44.0
     static let ballR = 4.5
     static let margin = 16.0
+    static let wallInset = 8.0
     static let winScore = 7
 
     static let playerSpeed = 290.0
@@ -134,7 +135,9 @@ final class PongGame {
     }
 
     private func clampPaddle(_ y: Double) -> Double {
-        min(max(y, Self.paddleH / 2), Self.height - Self.paddleH / 2)
+        // Keep a few points clear of the walls so a paddle never sits in a rounded corner of the glass.
+        let lo = Self.paddleH / 2 + Self.wallInset
+        return min(max(y, lo), Self.height - lo)
     }
 
     private func moveBot(_ dt: Double) {
