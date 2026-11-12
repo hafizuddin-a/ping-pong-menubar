@@ -40,18 +40,27 @@ Requires macOS 14 or later (Apple Silicon and Intel).
 
 ## Install
 
-You need Xcode's command-line tools (`xcode-select --install`). Open **Terminal** (Cmd+Space, type `Terminal`,
-press Return), then:
+Open **Terminal** (Cmd+Space, type `Terminal`, press Return), paste this and press Return:
 
 ```bash
-git clone https://github.com/hafizuddin-a/ping-pong-menubar.git
-cd ping-pong-menubar
-./install.sh
+curl -fsSL https://raw.githubusercontent.com/hafizuddin-a/ping-pong-menubar/main/get.sh | bash
 ```
 
-This builds `Ping.app`, puts it in `~/Applications` and opens it. Look for the icon with two paddles and a ball in
-the menu bar. Because the app is built on your own Mac, there is no macOS "unidentified developer" warning to click
-through.
+This downloads the latest release from GitHub, checks it against its published checksum, puts `Ping.app` in your
+Applications folder and opens it. Look for the icon with two paddles and a ball in the menu bar. Files downloaded with
+curl aren't quarantined, so there is no macOS warning to click through. The script is [`get.sh`](get.sh), about 50
+lines, if you'd like to read it first. Run it again any time to reinstall the latest version.
+
+**Or by hand** (no Terminal):
+
+1. Download `Ping-<version>.zip` from the [Releases](../../releases) page and unzip it.
+2. Drag `Ping.app` to your Applications folder.
+3. Open it. macOS will say it can't verify the developer, because this app is not notarized by Apple:
+   - **macOS 15 and later:** click Done, open **System Settings > Privacy & Security**, scroll down and click
+     **Open Anyway** next to Ping, then open the app again.
+   - **Earlier macOS:** right-click the app, choose **Open**, then **Open** again.
+
+Prefer to build it yourself? See [Build from source](#build-from-source).
 
 ## How to play
 
@@ -83,16 +92,21 @@ Right-click (or Control-click) the icon for the menu.
 ## What it can't do
 
 - It is single player only: you against the bot.
-- Launch at Login is most reliable once the app is in your Applications folder, which `./install.sh` does for you
-  (in `~/Applications`).
-- It is built and signed on your own Mac and is not notarized.
+- Launch at Login is most reliable once the app is in your Applications folder, which the curl install and
+  `./install.sh` both do for you.
+- It is not notarized, so macOS asks you to approve it the first time if you download it by hand (see Install).
 
 ## Build from source
 
+You need Xcode's command-line tools (`xcode-select --install`).
+
 ```bash
+git clone https://github.com/hafizuddin-a/ping-pong-menubar.git
+cd ping-pong-menubar
 ./build.sh      # builds Ping.app (universal)
 ./build.sh run  # builds and opens it
 ./install.sh    # builds, installs to ~/Applications and opens it
+./release.sh    # builds dist/Ping-<version>.zip and prints its SHA-256 for GitHub Releases
 ```
 
 The whole app is three small files in [Sources](Sources): [Pong.swift](Sources/Pong.swift) is the game itself (physics,
@@ -109,4 +123,4 @@ is how the three bot levels were tuned.
 ## Uninstall
 
 Choose **Launch at Login** again to untick it if you ticked it, choose **Quit Ping**, then drag `Ping.app` out of
-`~/Applications` to the Trash. Ping saves nothing but your difficulty setting.
+your Applications folder to the Trash. Ping saves nothing but your difficulty setting.
