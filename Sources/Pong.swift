@@ -63,6 +63,7 @@ final class PongGame {
         switch phase {
         case .idle, .over:
             playerScore = 0; botScore = 0
+            centerPaddles()
             serve(toward: Bool.random() ? 1 : -1)
         case .paused:
             // Resume where we left off: a ball still waiting to be served must be launched, not just unfrozen.
@@ -83,11 +84,14 @@ final class PongGame {
     func resetScore() {
         playerScore = 0; botScore = 0
         phase = .idle
-        // Back to the starting positions too, not just the score: a paddle left wherever the old game stopped
-        // would greet the player on the start screen.
+        centerPaddles()
+        centerBall()
+    }
+
+    /// Every new match starts with both paddles in the middle, not wherever the last one stopped.
+    private func centerPaddles() {
         playerY = Self.height / 2; botY = Self.height / 2
         playerVel = 0; botTarget = Self.height / 2
-        centerBall()
     }
 
     private func centerBall() {
