@@ -62,6 +62,8 @@ final class PongGame {
     func primaryAction() {
         switch phase {
         case .idle, .over:
+            // A moment's lockout on the result screen, so a late tap meant for the rally doesn't skip past it.
+            if phase == .over, overAge < 0.45 { return }
             playerScore = 0; botScore = 0
             centerPaddles()
             serve(toward: Bool.random() ? 1 : -1)
@@ -74,6 +76,7 @@ final class PongGame {
     }
 
     private var resumePhase: Phase = .playing
+    private var overAge = 0.0
 
     func pause() {
         guard phase == .playing || phase == .serving else { return }
@@ -123,7 +126,10 @@ final class PongGame {
     func step(_ rawDt: Double, input: Double) {
         let dt = min(rawDt, 1.0 / 30.0)
         movePlayer(dt, input: input)
-        moveBot(dt)
+        // A paused rally is frozen, bot included: the panel shows "space to resume" with the clock already running,
+        // and a bot that wandered back to the middle meanwhile would miss the ball it was about to return.
+        if phase != .paused { moveBot(dt) }
+        if phase == .over { overAge += dt }
 
         switch phase {
         case .serving:
@@ -255,6 +261,7 @@ final class PongGame {
         if playerScore >= Self.winScore || botScore >= Self.winScore {
             playerWon = playerScore > botScore
             phase = .over
+            overAge = 0
             centerBall()
             onEvent?(.matchOver)
         } else {
