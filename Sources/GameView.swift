@@ -152,29 +152,54 @@ final class GameView: NSView {
             NSBezierPath(ovalIn: NSRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)).fill()
         }
 
-        // A few quiet lines of hint text: (text, size, alpha).
-        typealias Line = (String, CGFloat, CGFloat)
+        // A few quiet lines of hint text. A `.key` part is drawn in a small keycap so it reads as the keyboard key.
+        enum Part { case text(String), key(String) }
+        typealias Line = ([Part], CGFloat, CGFloat)        // parts, size, alpha
         let lines: [Line]
         switch g.phase {
         case .idle:
-            lines = [("SPACE TO PLAY", 9.5, 0.5), ("FIRST TO \(PongGame.winScore) WINS", 8, 0.35)]
+            lines = [([.key("SPACE"), .text(" TO PLAY")], 9.5, 0.5),
+                     ([.text("FIRST TO \(PongGame.winScore) WINS")], 8, 0.35)]
         case .paused:
-            lines = [("SPACE TO RESUME", 9.5, 0.5)]
+            lines = [([.key("SPACE"), .text(" TO RESUME")], 9.5, 0.5)]
         case .over:
-            lines = [(g.playerWon ? "YOU WIN  ·  SPACE" : "BOT WINS  ·  SPACE", 9.5, 0.5),
-                     ("RIGHT-CLICK THE ICON", 8, 0.35), ("TO CHANGE DIFFICULTY", 8, 0.35)]
+            lines = [([.text(g.playerWon ? "YOU WIN  ·  " : "BOT WINS  ·  "), .key("SPACE")], 9.5, 0.5),
+                     ([.text("RIGHT-CLICK THE ICON")], 8, 0.35), ([.text("TO CHANGE DIFFICULTY")], 8, 0.35)]
         default:
             lines = []
         }
         var y = h / 2 + 84
-        for (text, size, a) in lines {
+        for (parts, size, a) in lines {
             let attrs: [NSAttributedString.Key: Any] = [
                 .font: NSFont.systemFont(ofSize: size, weight: .semibold),
                 .foregroundColor: ink.withAlphaComponent(a),
                 .kern: size > 9 ? 1.6 : 1.2,
             ]
-            drawCentered(text, at: NSPoint(x: w / 2, y: y), attrs: attrs)
-            y += size > 9 ? 17 : 13
+            let capPad: CGFloat = 5
+            let strings = parts.map { part -> (NSAttributedString, Bool) in
+                switch part {
+                case .text(let t): return (NSAttributedString(string: t, attributes: attrs), false)
+                case .key(let t): return (NSAttributedString(string: t, attributes: attrs), true)
+                }
+            }
+            let total = strings.reduce(0) { $0 + $1.0.size().width + ($1.1 ? capPad * 2 : 0) }
+            var x = w / 2 - total / 2
+            for (str, isKey) in strings {
+                let sz = str.size()
+                if isKey {
+                    let cap = NSRect(x: x, y: y - sz.height / 2 - 1.5, width: sz.width + capPad * 2, height: sz.height + 3)
+                    let box = NSBezierPath(roundedRect: cap.insetBy(dx: 0.5, dy: 0.5), xRadius: 3.5, yRadius: 3.5)
+                    box.lineWidth = 1
+                    ink.withAlphaComponent(a * 0.8).setStroke()
+                    box.stroke()
+                    str.draw(at: NSPoint(x: x + capPad, y: y - sz.height / 2))
+                    x += sz.width + capPad * 2
+                } else {
+                    str.draw(at: NSPoint(x: x, y: y - sz.height / 2))
+                    x += sz.width
+                }
+            }
+            y += size > 9 ? 19 : 13
         }
     }
 
