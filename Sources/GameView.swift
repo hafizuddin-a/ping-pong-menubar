@@ -176,28 +176,35 @@ final class GameView: NSView {
                 .kern: size > 9 ? 1.6 : 1.2,
             ]
             let capPad: CGFloat = 5
+            let kern: CGFloat = size > 9 ? 1.6 : 1.2        // AppKit adds kerning after the last glyph too; trim it
+            let font = NSFont.systemFont(ofSize: size, weight: .semibold)
             let strings = parts.map { part -> (NSAttributedString, Bool) in
                 switch part {
                 case .text(let t): return (NSAttributedString(string: t, attributes: attrs), false)
                 case .key(let t): return (NSAttributedString(string: t, attributes: attrs), true)
                 }
             }
-            let total = strings.reduce(0) { $0 + $1.0.size().width + ($1.1 ? capPad * 2 : 0) }
+            func width(_ str: NSAttributedString, _ isKey: Bool) -> CGFloat {
+                isKey ? str.size().width - kern + capPad * 2 : str.size().width
+            }
+            var total = strings.reduce(0) { $0 + width($1.0, $1.1) }
+            if strings.last?.1 == false { total -= kern }
             var x = w / 2 - total / 2
+            // Glyphs sit on a baseline, so centre on the capital letters rather than the text box.
+            let textTop = y - font.ascender + font.capHeight / 2
             for (str, isKey) in strings {
-                let sz = str.size()
                 if isKey {
-                    let cap = NSRect(x: x, y: y - sz.height / 2 - 1.5, width: sz.width + capPad * 2, height: sz.height + 3)
+                    let capH = font.capHeight + 7
+                    let cap = NSRect(x: x, y: y - capH / 2, width: width(str, true), height: capH)
                     let box = NSBezierPath(roundedRect: cap.insetBy(dx: 0.5, dy: 0.5), xRadius: 3.5, yRadius: 3.5)
                     box.lineWidth = 1
                     ink.withAlphaComponent(a * 0.8).setStroke()
                     box.stroke()
-                    str.draw(at: NSPoint(x: x + capPad, y: y - sz.height / 2))
-                    x += sz.width + capPad * 2
+                    str.draw(at: NSPoint(x: x + capPad, y: textTop))
                 } else {
-                    str.draw(at: NSPoint(x: x, y: y - sz.height / 2))
-                    x += sz.width
+                    str.draw(at: NSPoint(x: x, y: textTop))
                 }
+                x += width(str, isKey)
             }
             y += size > 9 ? 19 : 13
         }

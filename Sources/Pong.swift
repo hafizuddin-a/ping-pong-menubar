@@ -12,7 +12,7 @@ enum Difficulty: Int, CaseIterable {
     /// How often the bot re-reads the ball, in seconds.
     var reaction: Double { [0.26, 0.16, 0.09][rawValue] }
     /// Aiming error, re-rolled after every player hit. Half a paddle is 22.
-    var aimError: Double { [44, 33, 27][rawValue] }
+    var aimError: Double { [44, 33, 27.5][rawValue] }
 }
 
 enum GameEvent { case paddleHit, wallHit, playerScored, botScored, matchOver }
@@ -186,7 +186,7 @@ final class PongGame {
 
         // Player paddle (left).
         let pFace = playerX + Self.paddleW / 2
-        if vx < 0, prevX - r >= pFace, ballX - r <= pFace, abs(ballY - playerY) <= reach {
+        if vx < 0, prevX - r >= pFace, ballX - r <= pFace, reaches(paddleY: playerY, reach: reach) {
             bounce(off: playerY, dir: 1, paddleVel: playerVel)
             ballX = pFace + r
             botError = Double.random(in: -difficulty.aimError...difficulty.aimError)
@@ -196,7 +196,7 @@ final class PongGame {
 
         // Bot paddle (right).
         let bFace = botX - Self.paddleW / 2
-        if vx > 0, prevX + r <= bFace, ballX + r >= bFace, abs(ballY - botY) <= reach {
+        if vx > 0, prevX + r <= bFace, ballX + r >= bFace, reaches(paddleY: botY, reach: reach) {
             bounce(off: botY, dir: -1, paddleVel: 0)
             ballX = bFace - r
             onEvent?(.paddleHit)
@@ -204,6 +204,16 @@ final class PongGame {
 
         if ballX < -r * 2 { point(forPlayer: false) }
         else if ballX > Self.width + r * 2 { point(forPlayer: true) }
+    }
+
+    /// Whether a paddle at `paddleY` meets the ball. A paddle at the end of its travel also covers the gap between
+    /// it and the wall (the wall inset), otherwise a ball hugging the wall would slip past a paddle that is "all the way over".
+    private func reaches(paddleY: Double, reach: Double) -> Bool {
+        if abs(ballY - paddleY) <= reach { return true }
+        let lo = Self.paddleH / 2 + Self.wallInset
+        if paddleY <= lo + 0.5 && ballY < paddleY { return true }
+        if paddleY >= Self.height - lo - 0.5 && ballY > paddleY { return true }
+        return false
     }
 
     private func bounce(off paddleY: Double, dir: Double, paddleVel: Double) {
