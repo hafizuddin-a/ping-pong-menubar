@@ -12,7 +12,7 @@ enum Difficulty: Int, CaseIterable {
     /// How often the bot re-reads the ball, in seconds.
     var reaction: Double { [0.26, 0.16, 0.09][rawValue] }
     /// Aiming error, re-rolled after every player hit. Half a paddle is 22.
-    var aimError: Double { [44, 33, 27.5][rawValue] }
+    var aimError: Double { [44, 36, 31.5][rawValue] }
 }
 
 enum GameEvent { case paddleHit, wallHit, playerScored, botScored, matchOver }
@@ -173,20 +173,33 @@ final class PongGame {
         return m + r
     }
 
+    /// Moves the ball in sub-steps of at most ~2 pt so a fast ball is checked all along its path. One big step can jump
+    /// clean over a paddle's corner without ever overlapping it at a sampled position.
     private func moveBall(_ dt: Double) {
+        let n = max(1, Int((hypot(vx, vy) * dt / 2).rounded(.up)))
+        for _ in 0..<n {
+            moveBallStep(dt / Double(n))
+            if phase != .playing { break }
+        }
+    }
+
+    private func moveBallStep(_ dt: Double) {
         let r = Self.ballR
-        let prevX = ballX
+        let prevX = ballX, prevY = ballY
         ballX += vx * dt
         ballY += vy * dt
 
         if ballY < r { ballY = r; vy = abs(vy); onEvent?(.wallHit) }
         if ballY > Self.height - r { ballY = Self.height - r; vy = -abs(vy); onEvent?(.wallHit) }
 
-        let reach = Self.paddleH / 2 + r * 0.6
+        let reach = Self.paddleH / 2 + r                 // any visible touch of the paddle counts, tip included
 
         // Player paddle (left).
         let pFace = playerX + Self.paddleW / 2
-        if vx < 0, prevX - r >= pFace, ballX - r <= pFace, reaches(paddleY: playerY, reach: reach) {
+        // Judge the ball where it crossed the paddle's face, not where the frame happened to end it.
+        let pCross = prevY + (ballY - prevY) * ((prevX - r - pFace) / max(prevX - ballX, 1e-9))
+        let pSwept = prevX - r >= pFace && ballX - r <= pFace && reaches(paddleY: playerY, ballY: pCross, reach: reach)
+        if vx < 0, pSwept || (ballX >= playerX - Self.paddleW / 2 && touches(paddleX: playerX, paddleY: playerY)) {
             bounce(off: playerY, dir: 1, paddleVel: playerVel)
             ballX = pFace + r
             botError = Double.random(in: -difficulty.aimError...difficulty.aimError)
@@ -196,7 +209,9 @@ final class PongGame {
 
         // Bot paddle (right).
         let bFace = botX - Self.paddleW / 2
-        if vx > 0, prevX + r <= bFace, ballX + r >= bFace, reaches(paddleY: botY, reach: reach) {
+        let bCross = prevY + (ballY - prevY) * ((bFace - r - prevX) / max(ballX - prevX, 1e-9))
+        let bSwept = prevX + r <= bFace && ballX + r >= bFace && reaches(paddleY: botY, ballY: bCross, reach: reach)
+        if vx > 0, bSwept || (ballX <= botX + Self.paddleW / 2 && touches(paddleX: botX, paddleY: botY)) {
             bounce(off: botY, dir: -1, paddleVel: 0)
             ballX = bFace - r
             onEvent?(.paddleHit)
@@ -206,9 +221,17 @@ final class PongGame {
         else if ballX > Self.width + r * 2 { point(forPlayer: true) }
     }
 
+    /// Circle against the paddle's rectangle. Catches a ball that clips the tip or corner as it passes alongside,
+    /// which the face-crossing test alone lets through.
+    private func touches(paddleX: Double, paddleY: Double) -> Bool {
+        let cx = min(max(ballX, paddleX - Self.paddleW / 2), paddleX + Self.paddleW / 2)
+        let cy = min(max(ballY, paddleY - Self.paddleH / 2), paddleY + Self.paddleH / 2)
+        return hypot(ballX - cx, ballY - cy) <= Self.ballR
+    }
+
     /// Whether a paddle at `paddleY` meets the ball. A paddle at the end of its travel also covers the gap between
     /// it and the wall (the wall inset), otherwise a ball hugging the wall would slip past a paddle that is "all the way over".
-    private func reaches(paddleY: Double, reach: Double) -> Bool {
+    private func reaches(paddleY: Double, ballY: Double, reach: Double) -> Bool {
         if abs(ballY - paddleY) <= reach { return true }
         let lo = Self.paddleH / 2 + Self.wallInset
         if paddleY <= lo + 0.5 && ballY < paddleY { return true }
